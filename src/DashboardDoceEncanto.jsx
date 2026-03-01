@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './supabaseClient';
+
 import {
     LayoutDashboard, Egg, Package, ChefHat, DollarSign, Zap, Receipt, ShoppingCart,
     BarChart3, Plus, Trash2, Edit2, Save, X, ChevronRight, AlertCircle, Menu,
