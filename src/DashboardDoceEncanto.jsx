@@ -952,8 +952,8 @@ export default function DashboardDoceEncanto({ session }) {
                     </div>
                     <div className="flex items-center gap-6">
                         <div className="text-right">
-                            <p className="text-sm font-black text-dark leading-none">{currentUser}</p>
-                            <p className="text-[10px] text-pink-500 font-bold mt-1">PREMIUM USER</p>
+                            <p className="text-sm font-black text-dark leading-none truncate max-w-[150px]">{userEmail}</p>
+                            <p className="text-[10px] text-pink-500 font-bold mt-1">MINHA CONTA</p>
                         </div>
                         <div className="w-10 h-10 rounded-2xl bg-primary shadow-lg shadow-pink-200 flex items-center justify-center text-white">
                             <User size={24} />
