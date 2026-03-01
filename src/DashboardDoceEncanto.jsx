@@ -108,15 +108,15 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
 );
 
 // --- MAIN DASHBOARD COMPONENT ---
-export default function DashboardDoceEncanto() {
+export default function DashboardDoceEncanto({ session }) {
+    const userId = session?.user?.id;
+    const userEmail = session?.user?.email;
     const [activeTab, setActiveTab] = useState('dashboard');
     const [isLoading, setIsLoading] = useState(true);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTopping, setSelectedTopping] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('isLoggedIn') === 'true');
-    const [currentUser, setCurrentUser] = useState(() => localStorage.getItem('currentUser') || 'Lincoln');
 
     const [ingredientes, setIngredientes] = useState([]);
     const [embalagens, setEmbalagens] = useState([]);
@@ -195,12 +195,12 @@ export default function DashboardDoceEncanto() {
         setIsLoading(true);
         try {
             const defaults = [
-                { nome: 'Farinha de Trigo', unidade: 'unid.', preco_unitario: 5.50, quantidade_estoque: 10 },
-                { nome: 'Açúcar Refinado', unidade: 'unid.', preco_unitario: 4.20, quantidade_estoque: 10 },
-                { nome: 'Ovos', unidade: 'Bandeja', preco_unitario: 24.00, quantidade_estoque: 2 },
-                { nome: 'Leite Integral', unidade: 'unid.', preco_unitario: 4.80, quantidade_estoque: 12 },
-                { nome: 'Manteiga', unidade: 'unid.', preco_unitario: 25.00, quantidade_estoque: 2 },
-                { nome: 'Fermento em Pó', unidade: 'unid.', preco_unitario: 25.00, quantidade_estoque: 1 }
+                { nome: 'Farinha de Trigo', unidade: 'unid.', preco_unitario: 5.50, quantidade_estoque: 10, user_id: userId },
+                { nome: 'Açúcar Refinado', unidade: 'unid.', preco_unitario: 4.20, quantidade_estoque: 10, user_id: userId },
+                { nome: 'Ovos', unidade: 'Bandeja', preco_unitario: 24.00, quantidade_estoque: 2, user_id: userId },
+                { nome: 'Leite Integral', unidade: 'unid.', preco_unitario: 4.80, quantidade_estoque: 12, user_id: userId },
+                { nome: 'Manteiga', unidade: 'unid.', preco_unitario: 25.00, quantidade_estoque: 2, user_id: userId },
+                { nome: 'Fermento em Pó', unidade: 'unid.', preco_unitario: 25.00, quantidade_estoque: 1, user_id: userId }
             ];
 
             const { data: createdIngs } = await supabase.from('ingredientes').insert(defaults).select();
@@ -217,7 +217,7 @@ export default function DashboardDoceEncanto() {
 
                 const baseInserts = createdIngs
                     .filter(i => baseMap[i.nome])
-                    .map(i => ({ ingrediente_id: i.id, quantidade: baseMap[i.nome] }));
+                    .map(i => ({ ingrediente_id: i.id, quantidade: baseMap[i.nome], user_id: userId }));
 
                 await supabase.from('ingredientes_base').insert(baseInserts);
             }
@@ -229,6 +229,10 @@ export default function DashboardDoceEncanto() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
     };
 
     // --- SECTIONS ---
@@ -878,20 +882,6 @@ export default function DashboardDoceEncanto() {
         );
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('currentUser');
-        setIsLoggedIn(false);
-    };
-
-    if (!isLoggedIn) {
-        return <LoginPage onLogin={(user) => {
-            localStorage.setItem('isLoggedIn', 'true');
-            localStorage.setItem('currentUser', user);
-            setCurrentUser(user);
-            setIsLoggedIn(true);
-        }} />;
-    }
 
     return (
         <div className="flex h-screen bg-[#FFF0F5] overflow-hidden font-sans text-dark selection:bg-primary/20">
@@ -934,8 +924,8 @@ export default function DashboardDoceEncanto() {
                                     <User size={20} />
                                 </div>
                                 <div className="overflow-hidden">
-                                    <p className="text-xs font-black text-dark uppercase truncate leading-none mb-1">{currentUser}</p>
-                                    <p className="text-[9px] text-pink-500 font-bold uppercase tracking-widest opacity-60">Admin Premium</p>
+                                    <p className="text-xs font-black text-dark uppercase truncate leading-none mb-1">{userEmail}</p>
+                                    <p className="text-[9px] text-pink-500 font-bold uppercase tracking-widest opacity-60">Minha Conta</p>
                                 </div>
                             </div>
                         </div>
@@ -1342,111 +1332,3 @@ function NavButton({ icon, label, active, onClick }) {
     );
 }
 
-function LoginPage({ onLogin }) {
-    const [isRegistering, setIsRegistering] = useState(false);
-    const [user, setUser] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState(false);
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        // Lógica de acesso simples
-        // No modo cadastro, qualquer nome é aceito para criar o perfil
-        // No modo login, validamos a senha padrão
-        if (isRegistering) {
-            if (user.length > 2) {
-                onLogin(user);
-            } else {
-                setError(true);
-                setTimeout(() => setError(false), 2000);
-            }
-        } else {
-            if (user.length > 0 && password === 'doceencanto123') {
-                onLogin(user);
-            } else {
-                setError(true);
-                setTimeout(() => setError(false), 2000);
-            }
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-[#FFF0F5] flex items-center justify-center p-6 relative overflow-hidden">
-            {/* Elementos de fundo */}
-            <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-pink-100 rounded-full blur-[120px] opacity-60" />
-            <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-pink-200 rounded-full blur-[120px] opacity-40" />
-
-            <div className="w-full max-w-md relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
-                <div className="bg-white/70 backdrop-blur-2xl rounded-[48px] p-10 shadow-2xl border border-white/60 ring-1 ring-pink-100">
-                    <div className="flex flex-col items-center mb-10">
-                        <div className="p-5 bg-primary rounded-[32px] shadow-xl shadow-pink-200 mb-6 rotate-6 transition-transform hover:rotate-0 duration-500">
-                            <ChefHat className="text-white" size={40} />
-                        </div>
-                        <h1 className="text-3xl font-black text-dark tracking-tighter">Doce Encanto</h1>
-                        <p className="text-[10px] text-pink-500 font-extrabold uppercase tracking-[0.3em] mt-2">
-                            {isRegistering ? 'Crie sua conta agora' : 'Bem-vindo de volta!'}
-                        </p>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Seu Nome / Usuário</label>
-                            <div className="relative group">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors">
-                                    <User size={20} />
-                                </div>
-                                <input
-                                    type="text"
-                                    value={user}
-                                    onChange={(e) => setUser(e.target.value)}
-                                    placeholder="Como quer ser chamado?"
-                                    className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 focus:bg-white rounded-[24px] py-4 pl-12 pr-4 outline-none transition-all shadow-sm focus:shadow-pink-100/50"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">{isRegistering ? 'Crie sua Senha' : 'Senha de Acesso'}</label>
-                            <div className="relative group">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors">
-                                    <Clock size={20} />
-                                </div>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder={isRegistering ? "Pode ser qualquer uma" : "••••••••"}
-                                    className={cn(
-                                        "w-full bg-white/50 border-2 border-transparent focus:border-primary/20 focus:bg-white rounded-[24px] py-4 pl-12 pr-4 outline-none transition-all shadow-sm focus:shadow-pink-100/50",
-                                        error && "border-red-400 focus:border-red-400"
-                                    )}
-                                    required
-                                />
-                            </div>
-                            {error && !isRegistering && <p className="text-[10px] text-red-500 font-bold mt-2 ml-1 animate-bounce">Senha incorreta, tente doceencanto123</p>}
-                            {error && isRegistering && <p className="text-[10px] text-red-500 font-bold mt-2 ml-1 animate-bounce">Preencha todos os campos!</p>}
-                        </div>
-
-                        <Button type="submit" className="w-full h-16 rounded-[24px] text-base font-black tracking-widest shadow-xl shadow-pink-200 mt-4 group">
-                            {isRegistering ? 'CRIAR MEU ACESSO' : 'ENTRAR NO SISTEMA'} <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                        </Button>
-                    </form>
-
-                    <div className="mt-8 text-center">
-                        <button
-                            onClick={() => { setIsRegistering(!isRegistering); setError(false); }}
-                            className="text-[11px] font-bold text-gray-500 hover:text-primary transition-colors uppercase tracking-widest"
-                        >
-                            {isRegistering ? 'Já tenho uma conta? Entrar' : 'Não tem conta? Cadastre-se'}
-                        </button>
-                    </div>
-
-                    <p className="text-center text-[10px] text-gray-400 font-bold mt-10 uppercase tracking-widest opacity-60">
-                        Acesso Protegido • Doce Encanto 2024
-                    </p>
-                </div>
-            </div>
-        </div>
-    );
-}
